@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#fff5fa"/>
+<title>✦ StoryForge</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ─────────────────────────────────────────
+   TOKENS
+───────────────────────────────────────── */
+:root {
+  --sidebar-bg:    #fdf0f6;
+  --sidebar-bd:    #f0c8de;
+  --topbar-bg:     #fff5fa;
+  --topbar-bd:     #f5c0d8;
+  --app-bg:        #fce8f3;
+  --page-bg:       #ffffff;
+  --primary:       #e8337a;
+  --primary-pale:  #fde8f2;
+  --pink-mid:      #f06090;
+  --pink-light:    #f9c0d8;
+  --pink-faint:    #feeaf4;
+  --lilac:         #c880e8;
+  --text-dark:     #3a0a28;
+  --text-mid:      #8a3a60;
+  --text-soft:     #b87898;
+  --text-faint:    #d8a8c0;
+  --toolbar-bg:    #fff8fb;
+  --toolbar-bd:    #f0c0d8;
+  --ui:            'DM Sans', sans-serif;
+  --serif:         'Playfair Display', Georgia, serif;
+  --radius:        10px;
+  --topbar-h:      52px;
+  --bottomnav-h:   60px;
+  --sidebar-w:     260px;
+  --right-w:       216px;
+}
+
+/* ─────────────────────────────────────────
+   RESET
+───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: var(--ui); background: var(--app-bg); color: var(--text-dark); -webkit-text-size-adjust: 100%; }
+button { font-family: var(--ui); cursor: pointer; }
+input, textarea, select { font-family: var(--ui); }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: rgba(232,80,150,.22); border-radius: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::placeholder { color: rgba(190,140,170,.5); }
+
+/* ─────────────────────────────────────────
+   APP SHELL
+───────────────────────────────────────── */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;          /* dynamic viewport for mobile */
+  height: 100vh;           /* fallback */
+  overflow: hidden;
+  position: relative;
+}
+
+/* ─────────────────────────────────────────
+   TOP BAR
+───────────────────────────────────────── */
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  height: var(--topbar-h);
+  flex-shrink: 0;
+  background: var(--topbar-bg);
+  border-bottom: 1px solid var(--topbar-bd);
+  z-index: 100;
+}
+
+/* hamburger — mobile only */
+#menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-mid);
+  font-size: 22px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+#logo {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary), var(--lilac));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+#topbar-spacer { flex: 1; }
+
+#save-indicator {
+  font-size: 11px;
+  color: var(--text-faint);
+  opacity: 0;
+  transition: opacity .3s;
+  white-space: nowrap;
+}
+#save-indicator.show { opacity: 1; }
+
+.topbar-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.topbar-btn.outline {
+  background: #fff;
+  border: 1.5px solid var(--pink-light);
+  color: var(--text-mid);
+}
+.topbar-btn.outline:hover { background: var(--pink-faint); color: var(--primary); }
+.topbar-btn.solid {
+  background: linear-gradient(135deg, var(--primary), var(--pink-mid));
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(232,51,122,.3);
+}
+.topbar-btn.solid:hover { box-shadow: 0 4px 16px rgba(232,51,122,.46); }
+
+/* ─────────────────────────────────────────
+   BODY ROW
+───────────────────────────────────────── */
+#body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ─────────────────────────────────────────
+   SIDEBAR OVERLAY (mobile backdrop)
+───────────────────────────────────────── */
+#sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(60,10,40,.35);
+  z-index: 200;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+#sidebar-backdrop.show { display: block; }
+
+/* ─────────────────────────────────────────
+   SIDEBAR
+───────────────────────────────────────── */
+#sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-bd);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 210;
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+}
+
+#sidebar-head { padding: 14px 14px 10px; border-bottom: 1px solid var(--sidebar-bd); flex-shrink: 0; }
+
+#new-story-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 0;
+  background: linear-gradient(135deg, var(--primary), var(--pink-mid));
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(232,51,122,.28);
+  transition: box-shadow .15s;
+}
+#new-story-btn:hover { box-shadow: 0 4px 18px rgba(232,51,122,.44); }
+
+.search-wrap { position: relative; margin-top: 10px; }
+.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--text-faint); pointer-events: none; }
+#story-search {
+  width: 100%;
+  padding: 8px 10px 8px 30px;
+  background: #fff;
+  border: 1px solid var(--pink-light);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-dark);
+  outline: none;
+}
+#story-search:focus { border-color: var(--primary); }
+
+#sidebar-label {
+  padding: 10px 14px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-faint);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+#story-list { flex: 1; overflow-y: auto; padding: 4px 8px 16px; }
+
+#sidebar-footer {
+  padding: 12px 14px;
+  border-top: 1px solid var(--sidebar-bd);
+  font-size: 10px;
+  color: var(--text-faint);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Story list items */
+.story-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+  margin-bottom: 2px;
+}
+.story-item:hover { background: rgba(240,96,144,.07); }
+.story-item.active {
+  background: linear-gradient(135deg, var(--primary-pale), rgba(200,128,232,.12));
+  border-color: var(--pink-light);
+}
+.story-thumb {
+  width: 36px; height: 48px; border-radius: 5px; flex-shrink: 0;
+  background: linear-gradient(160deg, var(--pink-light), #d8a8f0);
+  box-shadow: 0 1px 4px rgba(220,100,160,.22);
+  position: relative; overflow: hidden;
+  background-size: cover; background-position: center;
+}
+.story-thumb::after {
+  content: '';
+  position: absolute; left: 6px; top: 0; bottom: 0;
+  width: 2px; background: rgba(255,255,255,.35);
+}
+.story-meta { flex: 1; min-width: 0; }
+.story-name {
+  font-family: var(--serif);
+  font-size: 12.5px; font-weight: 700;
+  color: var(--text-dark);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.story-item.active .story-name { color: var(--primary); }
+.story-sub { font-size: 10px; color: var(--text-faint); }
+.story-kebab {
+  background: none; border: none;
+  color: var(--text-soft); font-size: 18px;
+  padding: 2px 4px; line-height: 1; border-radius: 4px;
+  opacity: 0; transition: opacity .1s;
+}
+.story-item:hover .story-kebab,
+.story-item.active .story-kebab { opacity: 1; }
+.story-kebab:hover { color: var(--primary); background: rgba(232,51,122,.08); }
+.story-ctx-menu {
+  position: absolute; right: 8px; top: calc(100% + 2px);
+  z-index: 300;
+  background: #fff; border: 1px solid var(--pink-light);
+  border-radius: 8px; box-shadow: 0 4px 20px rgba(220,100,160,.22);
+  overflow: hidden; min-width: 130px; display: none;
+}
+.story-ctx-menu.open { display: block; }
+.story-ctx-menu button {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 14px; background: none; border: none;
+  font-size: 12px; font-weight: 600; color: #d02050; cursor: pointer;
+}
+.story-ctx-menu button:hover { background: #fff0f4; }
+#empty-list-msg {
+  text-align: center; padding: 36px 12px;
+  font-size: 12px; color: var(--text-faint); font-style: italic; line-height: 1.7;
+}
+
+/* ─────────────────────────────────────────
+   WELCOME
+───────────────────────────────────────── */
+#welcome {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: var(--app-bg); gap: 20px;
+  text-align: center; padding: 32px 24px;
+}
+.welcome-circle {
+  width: 110px; height: 110px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--pink-light), #d8b0f8);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 48px; box-shadow: 0 8px 32px rgba(220,100,160,.22);
+}
+.welcome-title {
+  font-family: var(--serif); font-size: 26px; font-weight: 700;
+  color: var(--text-dark); margin-bottom: 8px;
+}
+.welcome-sub { font-size: 14px; color: var(--text-soft); line-height: 1.7; max-width: 320px; }
+#welcome-btn {
+  background: linear-gradient(135deg, var(--primary), var(--pink-mid));
+  border: none; border-radius: 12px; padding: 13px 32px;
+  font-size: 14px; font-weight: 700; color: #fff;
+  box-shadow: 0 4px 16px rgba(232,51,122,.3);
+  transition: box-shadow .15s;
+}
+#welcome-btn:hover { box-shadow: 0 6px 24px rgba(232,51,122,.46); }
+
+/* ─────────────────────────────────────────
+   EDITOR PANEL
+───────────────────────────────────────── */
+#editor-panel { flex: 1; display: none; flex-direction: column; overflow: hidden; min-width: 0; }
+#editor-panel.show { display: flex; }
+
+/* TOOLBAR */
+#toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;      /* single scrollable row on mobile */
+  gap: 2px;
+  padding: 6px 10px;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--toolbar-bd);
+  flex-shrink: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#toolbar::-webkit-scrollbar { display: none; }
+
+.tb-sel {
+  background: #fff; border: 1px solid var(--pink-light);
+  border-radius: 6px; padding: 4px 5px;
+  font-size: 12px; color: var(--text-dark);
+  outline: none; cursor: pointer; height: 28px; flex-shrink: 0;
+}
+.tb-sel:focus { border-color: var(--primary); }
+#sel-font { width: 130px; }
+#sel-size { width: 50px; }
+#sel-style { width: 100px; }
+
+.tb-sep { width: 1px; height: 20px; background: var(--pink-light); margin: 0 3px; flex-shrink: 0; }
+
+.tb-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 30px; height: 30px; padding: 0 5px;
+  border-radius: 6px; border: 1.5px solid transparent;
+  background: transparent; color: var(--text-mid);
+  font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all .12s; flex-shrink: 0;
+}
+.tb-btn:hover { background: rgba(240,96,144,.1); color: var(--primary); }
+
+/* CANVAS */
+#canvas-scroll {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  background: var(--app-bg);
+  padding: 24px 0 80px;
+  display: flex; flex-direction: column; align-items: center;
+}
+#cover-banner {
+  width: min(760px, 96%);
+  height: 150px; border-radius: 12px 12px 0 0;
+  position: relative; overflow: hidden;
+  background: linear-gradient(135deg, var(--pink-light) 0%, #d8b0f8 100%);
+  background-size: cover; background-position: center;
+  flex-shrink: 0;
+}
+#cover-banner-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(240,80,140,.15), rgba(200,40,110,.55));
+}
+#cover-banner-title {
+  position: absolute; bottom: 16px; left: 28px; right: 28px;
+  font-family: var(--serif); font-size: 24px; font-weight: 700;
+  color: #fff; text-shadow: 0 2px 10px rgba(160,20,80,.5); line-height: 1.2;
+}
+#page {
+  width: min(760px, 96%);
+  background: var(--page-bg);
+  box-shadow: 0 2px 16px rgba(220,120,170,.13), 0 1px 3px rgba(200,100,150,.08);
+  border-radius: 0 0 4px 4px;
+  min-height: 700px;
+  padding: 36px 40px 60px;
+}
+
+#story-title-input {
+  width: 100%; font-family: var(--serif);
+  font-size: 28px; font-weight: 700; color: var(--text-dark);
+  background: none; border: none; outline: none;
+  border-bottom: 2px solid var(--pink-faint);
+  padding-bottom: 10px; margin-bottom: 20px;
+  transition: border-color .15s;
+}
+#story-title-input:focus { border-color: var(--pink-mid); }
+
+#author-row {
+  display: flex; align-items: center; gap: 7px;
+  margin-bottom: 28px; flex-wrap: wrap;
+}
+#author-avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--lilac));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: #fff; font-weight: 700; flex-shrink: 0;
+}
+#author-input {
+  font-size: 12px; font-weight: 600; color: var(--text-mid);
+  background: none; border: none; outline: none;
+  border-bottom: 1px solid var(--pink-faint); transition: border-color .15s;
+  max-width: 160px;
+}
+#author-input:focus { border-color: var(--pink-mid); }
+.a-dot { font-size: 11px; color: var(--text-faint); }
+#doc-date, #doc-words { font-size: 11px; color: var(--text-faint); }
+
+#editor-body {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 16px; line-height: 1.85;
+  color: var(--text-dark); outline: none;
+  min-height: 500px; caret-color: var(--primary);
+  -webkit-user-modify: read-write;
+}
+#editor-body:empty::before {
+  content: attr(data-placeholder);
+  color: rgba(180,120,160,.4); font-style: italic; pointer-events: none;
+}
+#editor-body h1 { font-size: 2em; margin: .6em 0 .3em; color: #c01860; }
+#editor-body h2 { font-size: 1.5em; margin: .6em 0 .3em; color: #a01050; }
+#editor-body h3 { font-size: 1.2em; margin: .5em 0 .25em; color: #901040; }
+#editor-body blockquote {
+  border-left: 3px solid var(--pink-light); margin: 1em 0;
+  padding: .5em 1em; color: #9a5070; font-style: italic;
+  background: #fff5fa; border-radius: 0 8px 8px 0;
+}
+#editor-body ul, #editor-body ol { padding-left: 1.5em; margin: .5em 0; }
+#editor-body li { margin-bottom: .25em; }
+
+/* ─────────────────────────────────────────
+   RIGHT PANEL (desktop)
+───────────────────────────────────────── */
+#right-panel {
+  width: var(--right-w); flex-shrink: 0;
+  background: var(--sidebar-bg);
+  border-left: 1px solid var(--sidebar-bd);
+  display: none;
+  flex-direction: column;
+  padding: 18px 12px;
+  gap: 16px;
+  overflow-y: auto;
+}
+#right-panel.show { display: flex; }
+
+.rp-section-title {
+  font-size: 10px; font-weight: 700; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.rp-label {
+  display: block; font-size: 10px; font-weight: 700;
+  color: var(--text-soft); text-transform: uppercase;
+  letter-spacing: .07em; margin-bottom: 5px;
+}
+.rp-field {
+  width: 100%; background: #fff;
+  border: 1px solid var(--pink-light);
+  border-radius: 8px; padding: 8px 10px;
+  font-size: 12px; color: var(--text-dark);
+  outline: none; transition: border-color .15s; resize: none;
+}
+.rp-field:focus { border-color: var(--primary); }
+
+/* cover thumb */
+#cover-thumb-wrap { display: flex; align-items: center; gap: 10px; }
+#cover-thumb {
+  width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--pink-light), #d0a8f0);
+  border: 2px dashed var(--pink-light); cursor: pointer;
+  position: relative; overflow: hidden; transition: border-color .2s;
+  background-size: cover; background-position: center;
+}
+#cover-thumb:hover { border-color: var(--primary); }
+#cover-thumb-icon {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+}
+.cover-action {
+  background: #fff; border: 1px solid var(--pink-light);
+  border-radius: 6px; padding: 3px 9px;
+  font-size: 11px; font-weight: 600; color: var(--text-mid); cursor: pointer;
+}
+.cover-action:hover { background: var(--pink-faint); color: var(--primary); }
+.cover-action.danger { color: #e04060; }
+.cover-action.danger:hover { background: #fff0f4; }
+
+/* stats */
+#stats-card {
+  background: linear-gradient(135deg, var(--primary-pale), rgba(200,128,232,.12));
+  border: 1.5px solid var(--pink-light); border-radius: 10px; padding: 12px 10px;
+}
+.stats-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.stats-key { font-size: 11px; color: var(--text-soft); }
+.stats-val { font-size: 11px; color: var(--text-dark); font-weight: 700; }
+
+/* ─────────────────────────────────────────
+   DETAILS SHEET (mobile bottom sheet)
+───────────────────────────────────────── */
+#details-backdrop {
+  display: none; position: fixed; inset: 0;
+  background: rgba(60,10,40,.35); z-index: 400;
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+}
+#details-backdrop.show { display: block; }
+
+#details-sheet {
+  position: fixed; bottom: var(--bottomnav-h); left: 0; right: 0;
+  max-height: 80dvh; max-height: 80vh;
+  background: var(--sidebar-bg);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -6px 32px rgba(220,100,160,.22);
+  z-index: 410;
+  display: flex; flex-direction: column;
+  transform: translateY(110%);
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+#details-sheet.show { transform: translateY(0); }
+.sheet-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--pink-light); margin: 12px auto 4px;
+  flex-shrink: 0;
+}
+.sheet-title {
+  font-family: var(--serif); font-size: 16px; font-weight: 700;
+  color: var(--text-dark); padding: 4px 18px 12px;
+  border-bottom: 1px solid var(--sidebar-bd); flex-shrink: 0;
+}
+#sheet-body { overflow-y: auto; padding: 16px 18px 24px; display: flex; flex-direction: column; gap: 14px; }
+
+/* ─────────────────────────────────────────
+   BOTTOM NAV (mobile only)
+───────────────────────────────────────── */
+#bottom-nav {
+  display: none;
+  height: var(--bottomnav-h);
+  background: var(--topbar-bg);
+  border-top: 1px solid var(--topbar-bd);
+  flex-shrink: 0;
+  align-items: stretch;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.nav-tab {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-faint); transition: color .15s;
+  font-size: 11px; font-weight: 600; padding: 0;
+}
+.nav-tab .nav-icon { font-size: 20px; line-height: 1; }
+.nav-tab.active { color: var(--primary); }
+.nav-tab:hover { color: var(--text-mid); }
+
+/* ─────────────────────────────────────────
+   SHARED UTILITY
+───────────────────────────────────────── */
+.hidden { display: none !important; }
+
+/* ─────────────────────────────────────────
+   ── RESPONSIVE ──
+───────────────────────────────────────── */
+
+/* ── Tablet (≤900px): hide right panel, keep sidebar ── */
+@media (max-width: 900px) {
+  #right-panel { display: none !important; }
+  :root { --sidebar-w: 240px; }
+}
+
+/* ── Mobile (≤640px) ── */
+@media (max-width: 640px) {
+  /* topbar adjustments */
+  #menu-toggle { display: block; }
+  .topbar-btn { padding: 7px 10px; font-size: 11px; }
+  #save-indicator { display: none; }   /* save auto — no space */
+
+  /* sidebar becomes a drawer */
+  #sidebar {
+    position: fixed;
+    top: 0; bottom: 0; left: 0;
+    z-index: 210;
+    transform: translateX(-110%);
+    border-right: 1px solid var(--sidebar-bd);
+    /* full height, overlays editor */
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  #sidebar.open { transform: translateX(0); }
+
+  /* bottom nav visible */
+  #bottom-nav { display: flex; }
+
+  /* canvas padding trimmed */
+  #canvas-scroll { padding: 16px 0 24px; }
+  #page { padding: 24px 20px 48px; }
+  #story-title-input { font-size: 22px; }
+  #cover-banner { height: 120px; }
+  #cover-banner-title { font-size: 18px; left: 20px; bottom: 12px; }
+
+  /* toolbar: hide font/size selects to save space, show essentials */
+  #sel-font, #sel-size, #sel-style { display: none; }
+
+  /* welcome page font */
+  .welcome-title { font-size: 22px; }
+}
+
+/* ── Very small (≤380px) ── */
+@media (max-width: 380px) {
+  #logo { font-size: 15px; }
+  .topbar-btn { padding: 6px 8px; font-size: 10px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ═══ TOP BAR ═══ -->
+<div id="topbar">
+  <button id="menu-toggle" aria-label="Open stories">☰</button>
+  <div id="logo">✦ StoryForge</div>
+  <div id="topbar-spacer"></div>
+  <span id="save-indicator">Saving…</span>
+  <button class="topbar-btn outline" id="export-btn">⬇ PDF</button>
+  <button class="topbar-btn solid"   id="save-btn">Save</button>
+</div>
+
+<!-- ═══ BODY ═══ -->
+<div id="body">
+
+  <!-- Sidebar backdrop (mobile) -->
+  <div id="sidebar-backdrop"></div>
+
+  <!-- ── SIDEBAR ── -->
+  <div id="sidebar">
+    <div id="sidebar-head">
+      <button id="new-story-btn">✦ New Story</button>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input id="story-search" type="text" placeholder="Search stories…" autocomplete="off"/>
+      </div>
+    </div>
+    <div id="sidebar-label">My Stories (0)</div>
+    <div id="story-list">
+      <div id="empty-list-msg">No stories yet.<br/>Tap + New Story to begin ✦</div>
+    </div>
+    <div id="sidebar-footer">♡ StoryForge · Write your world</div>
+  </div>
+
+  <!-- ── WELCOME ── -->
+  <div id="welcome">
+    <div class="welcome-circle">📖</div>
+    <div>
+      <div class="welcome-title">Your stories live here</div>
+      <p class="welcome-sub">Create a new story, add a dreamy cover photo, and download as a beautiful PDF.</p>
+    </div>
+    <button id="welcome-btn">✦ Create your first story</button>
+  </div>
+
+  <!-- ── EDITOR PANEL ── -->
+  <div id="editor-panel">
+
+    <!-- Toolbar -->
+    <div id="toolbar">
+      <select class="tb-sel" id="sel-font" title="Font">
+        <option>Playfair Display</option>
+        <option>Georgia</option>
+        <option>Times New Roman</option>
+        <option>Courier New</option>
+        <option>Arial</option>
+      </select>
+      <select class="tb-sel" id="sel-size" title="Size">
+        <option>12</option><option>14</option>
+        <option selected>16</option>
+        <option>18</option><option>20</option>
+        <option>24</option><option>28</option>
+        <option>32</option><option>36</option>
+      </select>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" title="Bold"      onclick="fmt('bold')"><b>B</b></button>
+      <button class="tb-btn" title="Italic"    onclick="fmt('italic')"><i>I</i></button>
+      <button class="tb-btn" title="Underline" onclick="fmt('underline')"><u>U</u></button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" title="Left"   onclick="fmt('justifyLeft')">⬤≡</button>
+      <button class="tb-btn" title="Center" onclick="fmt('justifyCenter')">≡</button>
+      <button class="tb-btn" title="Right"  onclick="fmt('justifyRight')">≡⬤</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" title="Bullets"  onclick="fmt('insertUnorderedList')">•≡</button>
+      <button class="tb-btn" title="Numbered" onclick="fmt('insertOrderedList')">1≡</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" title="Undo" onclick="fmt('undo')">↩</button>
+      <button class="tb-btn" title="Redo" onclick="fmt('redo')">↪</button>
+      <div class="tb-sep"></div>
+      <select class="tb-sel" id="sel-style" title="Style" onchange="applyStyle(this)">
+        <option value="p">Normal</option>
+        <option value="h1">Heading 1</option>
+        <option value="h2">Heading 2</option>
+        <option value="h3">Heading 3</option>
+        <option value="blockquote">Quote</option>
+      </select>
+    </div>
+
+    <!-- Canvas -->
+    <div id="canvas-scroll">
+      <div id="cover-banner">
+        <div id="cover-banner-overlay"></div>
+        <div id="cover-banner-title"></div>
+      </div>
+      <div id="page">
+        <input id="story-title-input" type="text" placeholder="Story title…" autocomplete="off"/>
+        <div id="author-row">
+          <div id="author-avatar">A</div>
+          <input id="author-input" type="text" placeholder="Author name…" autocomplete="off"/>
+          <span class="a-dot">·</span>
+          <span id="doc-date"></span>
+          <span class="a-dot">·</span>
+          <span id="doc-words">0 words</span>
+        </div>
+        <div id="editor-body"
+             contenteditable="true"
+             data-placeholder="Start writing your story… ✦"
+             spellcheck="true"></div>
+      </div>
+    </div>
+  </div><!-- /editor-panel -->
+
+  <!-- ── RIGHT PANEL (desktop) ── -->
+  <div id="right-panel">
+    <div class="rp-section-title">Story Details</div>
+
+    <div id="cover-thumb-wrap">
+      <div id="cover-thumb" title="Upload cover">
+        <div id="cover-thumb-icon">📷</div>
+        <input type="file" id="cover-file-input" accept="image/*" style="display:none"/>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-soft);margin-bottom:5px">Cover Photo</div>
+        <div style="display:flex;gap:5px">
+          <button class="cover-action" id="cover-upload-btn">Upload</button>
+          <button class="cover-action danger" id="cover-remove-btn" style="display:none">Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label class="rp-label">Genre / Tags</label>
+      <input class="rp-field" id="rp-genre" type="text" placeholder="Romance, Fantasy…"/>
+    </div>
+    <div>
+      <label class="rp-label">Description</label>
+      <textarea class="rp-field" id="rp-desc" rows="3" placeholder="A short blurb…"></textarea>
+    </div>
+
+    <div id="stats-card">
+      <div class="rp-section-title" style="margin-bottom:10px">✦ Statistics</div>
+      <div class="stats-row"><span class="stats-key">Words</span>     <span class="stats-val" id="stat-words">0</span></div>
+      <div class="stats-row"><span class="stats-key">Characters</span><span class="stats-val" id="stat-chars">0</span></div>
+      <div class="stats-row"><span class="stats-key">Read time</span> <span class="stats-val" id="stat-read">1 min</span></div>
+      <div class="stats-row"><span class="stats-key">Created</span>   <span class="stats-val" id="stat-created">—</span></div>
+      <div class="stats-row"><span class="stats-key">Updated</span>   <span class="stats-val" id="stat-updated">—</span></div>
+    </div>
+
+    <div>
+      <label class="rp-label">Status</label>
+      <select class="rp-field" id="rp-status" style="cursor:pointer">
+        <option value="drafting">✏️ Drafting</option>
+        <option value="editing">🔍 Editing</option>
+        <option value="complete">✅ Complete</option>
+        <option value="published">🌸 Published</option>
+      </select>
+    </div>
+  </div>
+
+</div><!-- /body -->
+
+<!-- ═══ DETAILS SHEET (mobile) ═══ -->
+<div id="details-backdrop"></div>
+<div id="details-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Story Details</div>
+  <div id="sheet-body">
+    <!-- Populated by JS mirror of right panel -->
+
+    <div id="cover-thumb-wrap-m">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="cover-thumb-m" style="
+          width:52px;height:52px;border-radius:8px;flex-shrink:0;
+          background:linear-gradient(135deg,var(--pink-light),#d0a8f0);
+          border:2px dashed var(--pink-light);cursor:pointer;
+          position:relative;overflow:hidden;
+          background-size:cover;background-position:center;
+        ">
+          <div id="cover-thumb-icon-m" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px">📷</div>
+          <input type="file" id="cover-file-input-m" accept="image/*" style="display:none"/>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--text-soft);margin-bottom:5px">Cover Photo</div>
+          <div style="display:flex;gap:5px">
+            <button class="cover-action" id="cover-upload-btn-m">Upload</button>
+            <button class="cover-action danger" id="cover-remove-btn-m" style="display:none">Remove</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label class="rp-label">Genre / Tags</label>
+      <input class="rp-field" id="rp-genre-m" type="text" placeholder="Romance, Fantasy…"/>
+    </div>
+    <div>
+      <label class="rp-label">Description</label>
+      <textarea class="rp-field" id="rp-desc-m" rows="3" placeholder="A short blurb…"></textarea>
+    </div>
+
+    <div id="stats-card-m" style="
+      background:linear-gradient(135deg,var(--primary-pale),rgba(200,128,232,.12));
+      border:1.5px solid var(--pink-light);border-radius:10px;padding:12px 10px;">
+      <div class="rp-section-title" style="margin-bottom:10px">✦ Statistics</div>
+      <div class="stats-row"><span class="stats-key">Words</span>     <span class="stats-val" id="stat-words-m">0</span></div>
+      <div class="stats-row"><span class="stats-key">Characters</span><span class="stats-val" id="stat-chars-m">0</span></div>
+      <div class="stats-row"><span class="stats-key">Read time</span> <span class="stats-val" id="stat-read-m">1 min</span></div>
+      <div class="stats-row"><span class="stats-key">Created</span>   <span class="stats-val" id="stat-created-m">—</span></div>
+      <div class="stats-row"><span class="stats-key">Updated</span>   <span class="stats-val" id="stat-updated-m">—</span></div>
+    </div>
+
+    <div>
+      <label class="rp-label">Status</label>
+      <select class="rp-field" id="rp-status-m" style="cursor:pointer">
+        <option value="drafting">✏️ Drafting</option>
+        <option value="editing">🔍 Editing</option>
+        <option value="complete">✅ Complete</option>
+        <option value="published">🌸 Published</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BOTTOM NAV (mobile) ═══ -->
+<div id="bottom-nav">
+  <button class="nav-tab" id="nav-stories" onclick="mobileNav('stories')">
+    <span class="nav-icon">📚</span>
+    <span>Stories</span>
+  </button>
+  <button class="nav-tab active" id="nav-write" onclick="mobileNav('write')">
+    <span class="nav-icon">✏️</span>
+    <span>Write</span>
+  </button>
+  <button class="nav-tab" id="nav-details" onclick="mobileNav('details')">
+    <span class="nav-icon">📋</span>
+    <span>Details</span>
+  </button>
+  <button class="nav-tab" id="nav-pdf" onclick="doExport()">
+    <span class="nav-icon">⬇️</span>
+    <span>PDF</span>
+  </button>
+</div>
+
+</div><!-- /app -->
+
+<script>
+/* ═══════════════════════════════════════
+   STATE
+═══════════════════════════════════════ */
+let stories   = [];
+let activeId  = null;
+let saveTimer = null;
+
+const genId   = () => Math.random().toString(36).slice(2,10);
+const fmtDate = ts => new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+const wc      = (t='') => t.trim() ? t.trim().split(/\s+/).length : 0;
+const getActive = () => stories.find(s => s.id === activeId) || null;
+const $ = id => document.getElementById(id);
+const isMobile = () => window.innerWidth <= 640;
+
+/* ═══════════════════════════════════════
+   ELEMENT REFERENCES
+═══════════════════════════════════════ */
+const el = {
+  welcome:       $('welcome'),
+  editorPanel:   $('editor-panel'),
+  rightPanel:    $('right-panel'),
+  storyList:     $('story-list'),
+  sidebarLabel:  $('sidebar-label'),
+  emptyMsg:      $('empty-list-msg'),
+  saveIndicator: $('save-indicator'),
+  saveBtn:       $('save-btn'),
+  exportBtn:     $('export-btn'),
+  sidebar:       $('sidebar'),
+  sidebarBd:     $('sidebar-backdrop'),
+  // editor
+  titleInput:    $('story-title-input'),
+  authorInput:   $('author-input'),
+  authorAvatar:  $('author-avatar'),
+  docDate:       $('doc-date'),
+  docWords:      $('doc-words'),
+  editorBody:    $('editor-body'),
+  coverBanner:   $('cover-banner'),
+  bannerTitle:   $('cover-banner-title'),
+  // right panel (desktop)
+  rpGenre:    $('rp-genre'),
+  rpDesc:     $('rp-desc'),
+  rpStatus:   $('rp-status'),
+  coverThumb: $('cover-thumb'),
+  coverIcon:  $('cover-thumb-icon'),
+  coverInput: $('cover-file-input'),
+  coverUp:    $('cover-upload-btn'),
+  coverRm:    $('cover-remove-btn'),
+  statW:  $('stat-words'),  statC: $('stat-chars'),
+  statR:  $('stat-read'),   statCr:$('stat-created'), statUp:$('stat-updated'),
+  // mobile sheet
+  rpGenreM:    $('rp-genre-m'),
+  rpDescM:     $('rp-desc-m'),
+  rpStatusM:   $('rp-status-m'),
+  coverThumbM: $('cover-thumb-m'),
+  coverIconM:  $('cover-thumb-icon-m'),
+  coverInputM: $('cover-file-input-m'),
+  coverUpM:    $('cover-upload-btn-m'),
+  coverRmM:    $('cover-remove-btn-m'),
+  statWM: $('stat-words-m'),  statCM: $('stat-chars-m'),
+  statRM: $('stat-read-m'),   statCrM:$('stat-created-m'), statUpM:$('stat-updated-m'),
+  detailsBd:    $('details-backdrop'),
+  detailsSheet: $('details-sheet'),
+};
+
+/* ═══════════════════════════════════════
+   VIEW STATE
+═══════════════════════════════════════ */
+function showEditor(show) {
+  el.welcome.style.display     = show ? 'none'  : 'flex';
+  el.editorPanel.classList.toggle('show', show);
+  el.rightPanel.classList.toggle('show', show && !isMobile());
+}
+
+function flashSave() {
+  clearTimeout(saveTimer);
+  el.saveIndicator.classList.add('show');
+  saveTimer = setTimeout(() => el.saveIndicator.classList.remove('show'), 1500);
+}
+
+/* ── Sidebar drawer (mobile) ── */
+function openSidebar() {
+  el.sidebar.classList.add('open');
+  el.sidebarBd.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+  el.sidebar.classList.remove('open');
+  el.sidebarBd.classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+/* ── Details sheet (mobile) ── */
+function openDetails() {
+  el.detailsBd.classList.add('show');
+  el.detailsSheet.classList.add('show');
+}
+function closeDetails() {
+  el.detailsBd.classList.remove('show');
+  el.detailsSheet.classList.remove('show');
+}
+
+/* ── Bottom nav ── */
+function mobileNav(tab) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  $('nav-' + tab)?.classList.add('active');
+  if (tab === 'stories') { openSidebar(); }
+  if (tab === 'details') {
+    if (!activeId) return;
+    syncSheetFromStory(getActive());
+    openDetails();
+  }
+  if (tab === 'write') { closeSidebar(); closeDetails(); }
+}
+
+/* ═══════════════════════════════════════
+   STORY LIST RENDER
+═══════════════════════════════════════ */
+function renderList(filter) {
+  filter = (filter || '').toLowerCase();
+  const filtered = stories.filter(s =>
+    (s.title + ' ' + (s.content||'')).toLowerCase().includes(filter)
+  );
+  el.sidebarLabel.textContent = `My Stories (${filtered.length})`;
+
+  [...el.storyList.querySelectorAll('.story-item')].forEach(n => n.remove());
+
+  if (filtered.length === 0) {
+    el.emptyMsg.style.display = 'block';
+    el.emptyMsg.innerHTML = stories.length === 0
+      ? 'No stories yet.<br/>Tap + New Story to begin ✦'
+      : 'No results found';
+    return;
+  }
+  el.emptyMsg.style.display = 'none';
+
+  filtered.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'story-item' + (s.id === activeId ? ' active' : '');
+    div.dataset.id = s.id;
+    const wds = wc((s.content||'').replace(/<[^>]+>/g,' '));
+    const tb  = s.cover ? `background-image:url('${s.cover}');background-size:cover;background-position:center;` : '';
+    div.innerHTML = `
+      <div class="story-thumb" style="${tb}"></div>
+      <div class="story-meta">
+        <div class="story-name">${esc(s.title) || 'Untitled Story'}</div>
+        <div class="story-sub">${wds} words · ${fmtDate(s.updatedAt||s.createdAt)}</div>
+      </div>
+      <button class="story-kebab" title="Options">⋯</button>
+      <div class="story-ctx-menu">
+        <button data-del>🗑 Delete story</button>
+      </div>`;
+
+    div.addEventListener('click', e => {
+      if (e.target.closest('.story-kebab') || e.target.closest('.story-ctx-menu')) return;
+      selectStory(s.id);
+      if (isMobile()) closeSidebar();
+    });
+    div.querySelector('.story-kebab').addEventListener('click', e => {
+      e.stopPropagation();
+      div.querySelector('.story-ctx-menu').classList.toggle('open');
+    });
+    div.querySelector('[data-del]').addEventListener('click', e => {
+      e.stopPropagation();
+      deleteStory(s.id);
+    });
+    el.storyList.appendChild(div);
+  });
+}
+
+/* ═══════════════════════════════════════
+   EDITOR LOAD
+═══════════════════════════════════════ */
+function loadEditor(story) {
+  el.titleInput.value  = story.title  || '';
+  el.authorInput.value = story.author || '';
+  el.authorAvatar.textContent = (story.author || 'A')[0].toUpperCase();
+  el.docDate.textContent = fmtDate(story.updatedAt || story.createdAt);
+  el.editorBody.innerHTML = story.content || '';
+  el.editorBody.style.fontFamily = '';
+  el.editorBody.style.fontSize   = '';
+  updateWordCount();
+  updateCoverBanner(story);
+  syncRightPanel(story);
+  syncStats(story);
+}
+
+function syncRightPanel(story) {
+  el.rpGenre.value  = story.genre   || '';
+  el.rpDesc.value   = story.desc    || '';
+  el.rpStatus.value = story.status  || 'drafting';
+  setCoverThumb(story.cover, false);
+}
+
+function syncSheetFromStory(story) {
+  if (!story) return;
+  el.rpGenreM.value  = story.genre   || '';
+  el.rpDescM.value   = story.desc    || '';
+  el.rpStatusM.value = story.status  || 'drafting';
+  setCoverThumb(story.cover, true);
+  syncStats(story);
+}
+
+function updateCoverBanner(story) {
+  if (story.cover) {
+    el.coverBanner.style.backgroundImage    = `url('${story.cover}')`;
+    el.coverBanner.style.backgroundSize     = 'cover';
+    el.coverBanner.style.backgroundPosition = 'center';
+  } else {
+    el.coverBanner.style.backgroundImage = '';
+    el.coverBanner.style.background = 'linear-gradient(135deg,var(--pink-light),#d8b0f8)';
+  }
+  el.bannerTitle.textContent = story.title || '';
+}
+
+function setCoverThumb(cover, mobile) {
+  const thumb = mobile ? el.coverThumbM : el.coverThumb;
+  const icon  = mobile ? el.coverIconM  : el.coverIcon;
+  const upBtn = mobile ? el.coverUpM    : el.coverUp;
+  const rmBtn = mobile ? el.coverRmM    : el.coverRm;
+  if (cover) {
+    thumb.style.backgroundImage    = `url('${cover}')`;
+    thumb.style.backgroundSize     = 'cover';
+    thumb.style.backgroundPosition = 'center';
+    icon.style.display  = 'none';
+    upBtn.textContent   = 'Change';
+    rmBtn.style.display = 'inline-block';
+  } else {
+    thumb.style.backgroundImage = '';
+    thumb.style.background = 'linear-gradient(135deg,var(--pink-light),#d0a8f0)';
+    icon.style.display  = 'flex';
+    upBtn.textContent   = 'Upload';
+    rmBtn.style.display = 'none';
+  }
+}
+
+function updateWordCount() {
+  const plain = el.editorBody.innerText || '';
+  const count = wc(plain);
+  el.docWords.textContent = count + ' words';
+  return count;
+}
+
+function syncStats(story) {
+  const plain = (story.content||'').replace(/<[^>]+>/g,' ');
+  const c = wc(plain);
+  const ch = plain.replace(/\s+/g,'').length;
+  const sets = [
+    [el.statW, el.statWM, c.toLocaleString()],
+    [el.statC, el.statCM, ch.toLocaleString()],
+    [el.statR, el.statRM, Math.max(1,Math.ceil(c/250))+' min'],
+    [el.statCr,el.statCrM,fmtDate(story.createdAt)],
+    [el.statUp,el.statUpM,fmtDate(story.updatedAt||story.createdAt)],
+  ];
+  sets.forEach(([a,b,v]) => { if(a) a.textContent=v; if(b) b.textContent=v; });
+}
+
+/* ═══════════════════════════════════════
+   CRUD
+═══════════════════════════════════════ */
+function createNew() {
+  const s = {
+    id:genId(), title:'', author:'', content:'',
+    cover:null, genre:'', desc:'', status:'drafting',
+    createdAt:Date.now(), updatedAt:Date.now()
+  };
+  stories.unshift(s);
+  selectStory(s.id);
+  renderList($('story-search').value);
+  setTimeout(() => el.titleInput.focus(), 50);
+}
+
+function selectStory(id) {
+  activeId = id;
+  const story = getActive();
+  if (!story) return;
+  showEditor(true);
+  loadEditor(story);
+  renderList($('story-search').value);
+}
+
+function deleteStory(id) {
+  if (!confirm('Delete this story?')) return;
+  stories = stories.filter(s => s.id !== id);
+  if (activeId === id) { activeId = null; showEditor(false); closeDetails(); }
+  renderList($('story-search').value);
+}
+
+function patchActive(patch) {
+  stories = stories.map(s =>
+    s.id === activeId ? {...s,...patch,updatedAt:Date.now()} : s
+  );
+  flashSave();
+}
+
+/* ═══════════════════════════════════════
+   COVER HANDLING
+═══════════════════════════════════════ */
+function applyCover(cover, mobile) {
+  patchActive({cover});
+  setCoverThumb(cover, false);
+  setCoverThumb(cover, true);
+  updateCoverBanner({...getActive(), cover});
+  renderList($('story-search').value);
+}
+
+function handleCoverFile(file, mobile) {
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => applyCover(ev.target.result, mobile);
+  r.readAsDataURL(file);
+}
+
+function removeCover() {
+  applyCover(null);
+  el.coverInput.value  = '';
+  el.coverInputM.value = '';
+}
+
+// Desktop cover
+el.coverThumb.addEventListener('click', () => el.coverInput.click());
+el.coverUp.addEventListener('click',    () => el.coverInput.click());
+el.coverInput.addEventListener('change', e => handleCoverFile(e.target.files[0], false));
+el.coverRm.addEventListener('click',    () => removeCover());
+
+// Mobile cover
+el.coverThumbM.addEventListener('click', () => el.coverInputM.click());
+el.coverUpM.addEventListener('click',    () => el.coverInputM.click());
+el.coverInputM.addEventListener('change', e => handleCoverFile(e.target.files[0], true));
+el.coverRmM.addEventListener('click',   () => removeCover());
+
+/* ═══════════════════════════════════════
+   EDITOR EVENTS
+═══════════════════════════════════════ */
+el.titleInput.addEventListener('input', () => {
+  patchActive({title: el.titleInput.value});
+  el.bannerTitle.textContent = el.titleInput.value;
+  el.authorAvatar.textContent = (el.authorInput.value||'A')[0].toUpperCase();
+  renderList($('story-search').value);
+});
+el.authorInput.addEventListener('input', () => {
+  patchActive({author: el.authorInput.value});
+  el.authorAvatar.textContent = (el.authorInput.value||'A')[0].toUpperCase();
+});
+el.editorBody.addEventListener('input', () => {
+  const content = el.editorBody.innerHTML;
+  patchActive({content});
+  updateWordCount();
+  const s = getActive();
+  if (s) syncStats({...s, content});
+});
+
+// Desktop right panel
+el.rpGenre.addEventListener('input',   () => patchActive({genre:el.rpGenre.value}));
+el.rpDesc.addEventListener('input',    () => patchActive({desc:el.rpDesc.value}));
+el.rpStatus.addEventListener('change', () => patchActive({status:el.rpStatus.value}));
+
+// Mobile sheet
+el.rpGenreM.addEventListener('input',   () => { patchActive({genre:el.rpGenreM.value}); el.rpGenre.value=el.rpGenreM.value; });
+el.rpDescM.addEventListener('input',    () => { patchActive({desc:el.rpDescM.value});   el.rpDesc.value=el.rpDescM.value; });
+el.rpStatusM.addEventListener('change', () => { patchActive({status:el.rpStatusM.value}); el.rpStatus.value=el.rpStatusM.value; });
+
+// Font / size
+$('sel-font').addEventListener('change', function() {
+  el.editorBody.style.fontFamily = this.value + ',Georgia,serif';
+});
+$('sel-size').addEventListener('change', function() {
+  el.editorBody.style.fontSize = this.value + 'px';
+});
+
+/* ═══════════════════════════════════════
+   TOP-BAR ACTIONS
+═══════════════════════════════════════ */
+$('menu-toggle').addEventListener('click', openSidebar);
+el.sidebarBd.addEventListener('click',    closeSidebar);
+el.detailsBd.addEventListener('click',    closeDetails);
+
+$('new-story-btn').addEventListener('click', () => { createNew(); if(isMobile()) closeSidebar(); });
+$('welcome-btn').addEventListener('click',   createNew);
+$('story-search').addEventListener('input',  e => renderList(e.target.value));
+
+el.saveBtn.addEventListener('click', () => {
+  el.saveBtn.textContent = '✓ Saved';
+  setTimeout(() => el.saveBtn.textContent = 'Save', 900);
+});
+
+el.exportBtn.addEventListener('click', doExport);
+
+function doExport() {
+  const story = getActive();
+  if (!story) { alert('Open a story first!'); return; }
+  el.exportBtn.textContent = '…';
+  el.exportBtn.disabled = true;
+  setTimeout(() => {
+    exportPDF(story);
+    el.exportBtn.textContent = '⬇ PDF';
+    el.exportBtn.disabled = false;
+  }, 80);
+}
+
+// Close menus on outside click
+document.addEventListener('click', () => {
+  document.querySelectorAll('.story-ctx-menu.open').forEach(m => m.classList.remove('open'));
+});
+
+/* ═══════════════════════════════════════
+   RICH TEXT
+═══════════════════════════════════════ */
+function fmt(cmd, val) {
+  el.editorBody.focus();
+  document.execCommand(cmd, false, val || null);
+}
+function applyStyle(sel) {
+  fmt('formatBlock', sel.value);
+  sel.value = 'p';
+}
+
+/* ═══════════════════════════════════════
+   PDF EXPORT
+═══════════════════════════════════════ */
+function esc(s='') { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function exportPDF(story) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = story.content || '';
+  const bodyText = tmp.innerText || '';
+  const bodyHtml = esc(bodyText).replace(/\n\n+/g,'</p><p>').replace(/\n/g,'<br/>');
+  const coverStyle = story.cover
+    ? `background:url('${story.cover}') center/cover;`
+    : 'background:linear-gradient(135deg,#f9a8d4,#e879f9,#818cf8);';
+
+  const w = window.open('','_blank');
+  if (!w) { alert('Please allow pop-ups to download PDF.'); return; }
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<title>${esc(story.title)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box} @page{size:A4;margin:0}
+body{font-family:'Lora',Georgia,serif;background:#fff}
+.cover{width:210mm;height:297mm;${coverStyle}display:flex;flex-direction:column;
+  align-items:center;justify-content:center;position:relative;page-break-after:always}
+.ov{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(240,80,140,.25),rgba(180,30,100,.6))}
+.cc{position:relative;z-index:2;text-align:center;padding:20mm;color:#fff}
+.ct{font-family:'Playfair Display',serif;font-size:46pt;font-weight:700;
+  line-height:1.1;margin-bottom:8mm;text-shadow:0 2px 20px rgba(0,0,0,.4)}
+.rule{width:48mm;height:2pt;background:rgba(255,255,255,.55);border-radius:2pt;margin:0 auto 8mm}
+.ca{font-family:'Lora',serif;font-style:italic;font-size:16pt;opacity:.9}
+.cd{font-size:10pt;opacity:.55;margin-top:6mm;letter-spacing:.1em}
+.page{width:210mm;min-height:297mm;padding:24mm 30mm;background:#fff}
+.pt{font-family:'Playfair Display',serif;font-size:28pt;color:#c01860;
+  margin-bottom:10mm;padding-bottom:5mm;border-bottom:1.5pt solid #f9c0d8;line-height:1.2}
+.pb{font-family:'Lora',serif;font-size:12pt;line-height:2;color:#3a0a28}
+.pb p{margin-bottom:5mm;text-indent:7mm} .pb p:first-child{text-indent:0}
+.ft{margin-top:14mm;padding-top:4mm;border-top:1pt solid #f9c0d8;
+  text-align:center;font-size:9pt;color:#c878a0;font-style:italic}
+</style></head><body>
+<div class="cover"><div class="ov"></div><div class="cc">
+  <div class="ct">${esc(story.title)||'My Story'}</div>
+  <div class="rule"></div>
+  ${story.author?`<div class="ca">by ${esc(story.author)}</div>`:''}
+  <div class="cd">${fmtDate(story.createdAt)}</div>
+</div></div>
+<div class="page">
+  <div class="pt">${esc(story.title)||'My Story'}</div>
+  <div class="pb"><p>${bodyHtml||'This story is just beginning…'}</p></div>
+  <div class="ft">♡ ${esc(story.title)} · ${fmtDate(story.createdAt)} ♡</div>
+</div>
+<script>window.onload=()=>{window.print();setTimeout(()=>window.close(),900)}<\/script>
+</body></html>`);
+  w.document.close();
+}
+
+/* ═══════════════════════════════════════
+   RESIZE HANDLER
+═══════════════════════════════════════ */
+window.addEventListener('resize', () => {
+  if (!isMobile()) {
+    closeSidebar();
+    closeDetails();
+    if (activeId) el.rightPanel.classList.add('show');
+  } else {
+    el.rightPanel.classList.remove('show');
+  }
+});
+
+/* ═══════════════════════════════════════
+   INIT
+═══════════════════════════════════════ */
+showEditor(false);
+renderList();
+</script>
+</body>
+</html>
